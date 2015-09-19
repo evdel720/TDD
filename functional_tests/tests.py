@@ -30,8 +30,9 @@ class NewVisitorTest(LiveServerTestCase):
         self.assertEqual(inputbox.get_attribute('placeholder'), 'Enter a to-do item')
         # User types an item and updates
         inputbox.send_keys('Buy peacock feathers')
-       
         inputbox.send_keys(Keys.ENTER)
+        edith_list_url = self.browser.current_url
+        self.assertRegex(edith_list_url, '/lists/.+')
         self.check_for_row_in_list_table('1: Buy peacock feathers')
         
 
@@ -42,7 +43,52 @@ class NewVisitorTest(LiveServerTestCase):
         
         self.check_for_row_in_list_table('1: Buy peacock feathers')
         self.check_for_row_in_list_table('2: Use peacock feathers to make a fly')
-        # site generated a unique URL for users
-        # Try another browser to visit and check is there still the lists
+
+        # now a new user, Francis comes along to the site.
+        # we use a new browser session to make sure that no information of Edith's is coming through
+        self.browser.quit()
+        self.browser = webdriver.Firefox()
+        
+        #Francis visits the home page. There is no items of Edith's
+        self.browser.get(self.live_server_url)
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertNotIn('make a fly', page_text)
+        
+        #Francis starts a new list
+        inputbox = self.browser.find_element_by_id('id_new_item')
+        inputbox.send_keys('Buy milk')
+        inputbox.send_keys(Keys.ENTER)
+
+        #Francis gets his own unique URL
+        francis_list_url = self.browser.current_url
+        self.assertRegex(francis_list_url, '/lists/.+')
+        self.assertNotEqual(francis_list_url, edith_list_url)
+
+        #Again, there's no trace of Edith.
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertNotIn('Buy peacock feathers', page_text)
+        self.assertIn('Buy milk', page_text)
+        # satisfied. they both went to sleep.
+        
         self.fail('Finish the test!')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
